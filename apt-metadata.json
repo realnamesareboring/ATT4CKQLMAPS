@@ -1,0 +1,123 @@
+{
+  "aptGroups": {
+    "G0007": {
+      "name": "APT28",
+      "aliases": ["Fancy Bear", "Sofacy", "Sednit"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian military intelligence (GRU) threat group"
+    },
+    "G0016": {
+      "name": "APT29",
+      "aliases": ["Cozy Bear", "The Dukes"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian intelligence service threat group"
+    },
+    "G0050": {
+      "name": "APT32",
+      "aliases": ["OceanLotus"],
+      "country": "Vietnam",
+      "coordinates": { "lat": 21.0285, "lng": 105.8542 },
+      "description": "Vietnamese state-sponsored threat group"
+    },
+    "G0096": {
+      "name": "APT41",
+      "aliases": ["Winnti", "Barium"],
+      "country": "China",
+      "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+      "description": "Chinese state-sponsored threat group"
+    },
+    "G0040": {
+      "name": "Lazarus Group",
+      "aliases": ["HIDDEN COBRA", "Guardians of Peace"],
+      "country": "North Korea",
+      "coordinates": { "lat": 39.0392, "lng": 125.7625 },
+      "description": "North Korean state-sponsored threat group"
+    },
+    "G0065": {
+      "name": "Leviathan",
+      "aliases": ["TEMP.Jumper", "APT40"],
+      "country": "China",
+      "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+      "description": "Chinese state-sponsored threat group"
+    },
+    "G0034": {
+      "name": "Sandworm Team",
+      "aliases": ["ELECTRUM", "Telebots"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian military threat group"
+    },
+    "G0087": {
+      "name": "APT39",
+      "aliases": ["Chafer"],
+      "country": "Iran",
+      "coordinates": { "lat": 35.6892, "lng": 51.3890 },
+      "description": "Iranian cyber espionage group"
+    },
+    "G0049": {
+      "name": "OilRig",
+      "aliases": ["APT34", "Helix Kitten"],
+      "country": "Iran",
+      "coordinates": { "lat": 35.6892, "lng": 51.3890 },
+      "description": "Iranian threat group focused on Middle East"
+    },
+    "G0010": {
+      "name": "Turla",
+      "aliases": ["Snake", "Uroburos"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian FSB-attributed threat group"
+    },
+    "G0100": {
+      "name": "Inception",
+      "aliases": ["Cloud Atlas"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian-speaking threat group"
+    },
+    "G0059": {
+      "name": "Magic Hound",
+      "aliases": ["Rocket Kitten", "APT35"],
+      "country": "Iran",
+      "coordinates": { "lat": 35.6892, "lng": 51.3890 },
+      "description": "Iranian threat group"
+    },
+    "G0027": {
+      "name": "Threat Group-3390",
+      "aliases": ["APT27", "Emissary Panda"],
+      "country": "China",
+      "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+      "description": "Chinese threat group"
+    },
+    "G0006": {
+      "name": "APT1",
+      "aliases": ["Comment Crew"],
+      "country": "China",
+      "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+      "description": "Chinese PLA Unit 61398"
+    },
+    "G0022": {
+      "name": "APT3",
+      "aliases": ["Gothic Panda", "UPS Team"],
+      "country": "China",
+      "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+      "description": "Chinese threat group"
+    },
+    "G0082": {
+      "name": "APT38",
+      "aliases": ["TEMP.Hermit"],
+      "country": "North Korea",
+      "coordinates": { "lat": 39.0392, "lng": 125.7625 },
+      "description": "North Korean financial threat group"
+    },
+    "G0035": {
+      "name": "Dragonfly",
+      "aliases": ["Energetic Bear", "Crouching Yeti"],
+      "country": "Russia",
+      "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+      "description": "Russian threat group targeting energy sector"
+    }
+  }
+}

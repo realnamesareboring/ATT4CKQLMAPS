@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATT4CKQL - Dynamic MITRE Framework Integration</title>
+    
+    <!-- Cyberpunk Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Leaflet JS for OpenStreetMap - Load before our script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .glitch {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px #3b82f6;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .action-btn.primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        
+        .action-btn.primary:hover {
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Loading Screen */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loading-content h2 {
+            font-family: 'Orbitron', monospace;
+            color: #3b82f6;
+            margin-bottom: 20px;
+        }
+        
+        .loading-steps {
+            list-style: none;
+            text-align: left;
+            margin: 20px 0;
+        }
+        
+        .loading-steps li {
+            padding: 8px 0;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-steps li.active {
+            opacity: 1;
+            color: #10b981;
+        }
+        
+        .loading-steps li.completed {
+            opacity: 1;
+            color: #3b82f6;
+        }
+        
+        .loading-steps li::before {
+            content: "⚡ ";
+            margin-right: 8px;
+        }
+        
+        .progress-bar {
+            width: 400px;
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            margin: 1% auto;
+            padding: 0;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            width: 98%;
+            max-width: 1800px;
+            height: 95vh;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close-btn {
+            color: #94a3b8;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            cursor: pointer;
+            z-index: 1001;
+            transition: color 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            color: #ef4444;
+        }
+        
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 2px solid #374151;
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+        }
+        
+        .modal-header h2 {
+            font-family: 'Orbitron', monospace;
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .modal-header p {
+            color: #cbd5e1;
+            font-size: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status-ready {
+            background: #10b981;
+            color: white;
+        }
+        
+        /* World Map Styles */
+        .world-map-container {
+            display: flex;
+            height: calc(95vh - 120px);
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .map-visualization {
+            flex: 1;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+            position: relative;
+        }
+        
+        .world-map-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle at 30% 30%, #1e293b 0%, #0f172a 100%);
+        }
+        
+        .world-map-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .apt-marker {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .apt-marker circle {
+            fill: #dc2626;
+            stroke: #991b1b;
+            stroke-width: 2;
+        }
+        
+        .apt-marker:hover circle {
+            fill: #ef4444;
+            stroke: #dc2626;
+            r: 10;
+        }
+        
+        .apt-marker text {
+            fill: white;
+            font-size: 12px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        
+        .apt-details-sidebar {
+            width: 400px;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid #374151;
+            padding: 20px;
+        }
+        
+        .apt-details-sidebar h3 {
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .apt-detail-card {
+            background: #374151;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .apt-detail-card h4 {
+            color: #ef4444;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .apt-detail-card .aliases {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+        
+        .apt-detail-card .description {
+            color: #cbd5e1;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        
+        .apt-detail-card .coverage-bar {
+            background: #1f2937;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .apt-detail-card .coverage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #ef4444);
+            transition: width 0.3s ease;
+        }
+        
+        .apt-detail-card .coverage-text {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        
+        .expand-techniques-btn {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .expand-techniques-btn:hover {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .techniques-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .techniques-list.expanded {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .technique-item {
+            background: #1f2937;
+            padding: 8px;
+            margin: 6px 0;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .technique-item.detected {
+            border-left: 3px solid #10b981;
+        }
+        
+        .technique-item.gap {
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .technique-id {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .technique-name {
+            color: #cbd5e1;
+            margin-top: 2px;
+        }
+        
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #cbd5e1;
+        }
+        
+        .legend-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Attack Chains Container */
+        .attack-chains-container {
+            display: flex;
+            height: calc(95vh - 120px);
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .chains-sidebar {
+            width: 320px;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid #374151;
+        }
+        
+        .chains-sidebar-header {
+            padding: 20px;
+            border-bottom: 2px solid #374151;
+            background: #0f172a;
+        }
+        
+        .chains-sidebar h3 {
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .chains-count {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .chains-list {
+            padding: 20px;
+        }
+        
+        .chain-item {
+            background: #374151;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .chain-item:hover {
+            background: #4b5563;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        
+        .chain-item.active {
+            background: #3b82f6;
+            border-left-color: #1d4ed8;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .chain-item.apt-chain {
+            border-left-color: #dc2626;
+            background: linear-gradient(135deg, #451a03 0%, #374151 100%);
+        }
+        
+        .chain-item.apt-chain:hover {
+            background: linear-gradient(135deg, #7c2d12 0%, #4b5563 100%);
+        }
+        
+        .chain-item.apt-chain.active {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+        
+        .chain-item .name {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        
+        .chain-item .details {
+            color: #9ca3af;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .confidence-badge {
+            background: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .confidence-medium {
+            background: #f59e0b;
+        }
+        
+        .confidence-low {
+            background: #ef4444;
+        }
+        
+        .chain-visualization {
+            flex: 1;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+        }
+        
+        .chain-viz-header {
+            padding: 20px;
+            border-bottom: 2px solid #374151;
+            background: #1e293b;
+        }
+        
+        .chain-viz-header h3 {
+            color: white;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .chain-stats {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+        
+        .chain-stats span {
+            margin-right: 20px;
+        }
+        
+        .platform-badge {
+            background: #ff9900;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .chain-graph {
+            position: relative;
+            height: calc(100% - 100px);
+            background: radial-gradient(circle at 30% 30%, #1e293b 0%, #0f172a 100%);
+            padding: 30px;
+            overflow: auto;
+        }
+        
+        .apt-technique-node {
+            position: absolute;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 10px;
+            min-width: 220px;
+            max-width: 240px;
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+            border: 2px solid #991b1b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .apt-technique-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(220, 38, 38, 0.6);
+            z-index: 10;
+        }
+        
+        .apt-indicator {
+            font-size: 10px;
+            color: #fecaca;
+            margin: 4px 0;
+            padding: 2px 6px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .gap-node {
+            position: absolute;
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 10px;
+            min-width: 200px;
+            max-width: 220px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 2px dashed #6b7280;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 12px;
+        }
+        
+        .gap-node:hover {
+            opacity: 1;
+            border-color: #f59e0b;
+        }
+        
+        .tech-id {
+            font-weight: bold;
+            font-size: 13px;
+            color: #93c5fd;
+            margin-bottom: 4px;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .tech-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 6px 0;
+            line-height: 1.2;
+        }
+        
+        .tech-query {
+            font-size: 11px;
+            color: #cbd5e1;
+            opacity: 0.9;
+            margin: 6px 0;
+            font-style: italic;
+        }
+        
+        .tech-entities {
+            font-size: 10px;
+            color: #fbbf24;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .tech-entities::before {
+            content: "🔗 ";
+        }
+        
+        .connection-line {
+            position: absolute;
+            background: #3b82f6;
+            height: 3px;
+            transform-origin: left center;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+        
+        .connection-label {
+            position: absolute;
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            border: 1px solid #374151;
+            z-index: 5;
+        }
+        
+        .correlation-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+        
+        .legend-title {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: #cbd5e1;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 3px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        
+        .query-details-panel {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            width: 300px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .query-details-panel.show {
+            display: block;
+        }
+        
+        .query-details-panel h4 {
+            color: #3b82f6;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 10px;
+        }
+        
+        .query-code-preview {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #3b82f6;
+            max-width: 500px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .overlay-close {
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        
+        .overlay-close:hover {
+            color: #ef4444;
+        }
+        
+        .technique-overlay-item {
+            background: #374151;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #10b981;
+            font-size: 12px;
+        }
+        
+        .technique-overlay-item.gap {
+            border-left-color: #f59e0b;
+        }
+        .chains-sidebar::-webkit-scrollbar,
+        .chain-graph::-webkit-scrollbar,
+        .query-details-panel::-webkit-scrollbar,
+        .apt-details-sidebar::-webkit-scrollbar,
+        .techniques-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chains-sidebar::-webkit-scrollbar-track,
+        .chain-graph::-webkit-scrollbar-track,
+        .query-details-panel::-webkit-scrollbar-track,
+        .apt-details-sidebar::-webkit-scrollbar-track,
+        .techniques-list::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        .chains-sidebar::-webkit-scrollbar-thumb,
+        .chain-graph::-webkit-scrollbar-thumb,
+        .query-details-panel::-webkit-scrollbar-thumb,
+        .apt-details-sidebar::-webkit-scrollbar-thumb,
+        .techniques-list::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <h2>⚡ Scanning ATT4CKQL Repository</h2>
+            <ul class="loading-steps" id="loading-steps">
+                <li class="active" id="step-1">Fetching MITRE ATT&CK framework data</li>
+                <li id="step-2">Scanning GitHub repository for KQL files</li>
+                <li id="step-3">Parsing query content and detecting techniques</li>
+                <li id="step-4">Mapping queries to MITRE ATT&CK techniques</li>
+                <li id="step-5">Analyzing APT groups and detection coverage</li>
+                <li id="step-6">Building APT gap analysis visualization</li>
+            </ul>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="current-file">Initializing...</p>
+        </div>
+    </div>
+
+    <header>
+        <h1 class="glitch">ATT4CKQL</h1>
+        <p class="subtitle">APT Group Detection Coverage Analysis - Enhanced KQL Queries for Microsoft Sentinel</p>
+        <div class="action-buttons">
+            <button class="action-btn primary" onclick="scanRepository()">
+                🔍 Scan Repository & Analyze APT Coverage
+            </button>
+            <button class="action-btn" onclick="showWorldMap()">
+                🌍 APT World Map
+            </button>
+            <button class="action-btn" onclick="exportResults()">
+                📊 Export Results
+            </button>
+        </div>
+    </header>
+
+    <!-- World Map Modal -->
+    <div id="world-map-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2>🌍 Global APT Threat Landscape</h2>
+                <p>Interactive map showing APT group origins and your detection coverage
+                <span class="status-indicator status-ready">Live Data</span></p>
+            </div>
+            <div class="world-map-container">
+                <div class="map-visualization">
+                    <div id="google-map" style="width: 100%; height: 100%; border-radius: 8px; position: relative;"></div>
+                    
+                    <div class="map-legend">
+                        <div class="legend-title">APT Attribution</div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background: #dc2626;"></div>
+                            <span>APT Group Location</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background: #10b981;"></div>
+                            <span>High Coverage (&gt;50%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background: #f59e0b;"></div>
+                            <span>Medium Coverage (25-50%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background: #ef4444;"></div>
+                            <span>Low Coverage (&lt;25%)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="apt-details-sidebar" id="apt-details-sidebar">
+                    <h3>APT Groups</h3>
+                    <p style="color: #9ca3af; font-size: 12px;">Click to view location and details</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attack Chains Analysis Modal -->
+    <div id="attack-chains-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2>🔗 APT Group Detection Coverage Analysis</h2>
+                <p>Automated gap analysis showing which APT techniques you detect vs. which need new queries
+                <span id="repo-status" class="status-indicator status-ready">Live Data</span></p>
+            </div>
+            <div class="attack-chains-container">
+                <div class="chains-sidebar">
+                    <div class="chains-sidebar-header">
+                        <h3>APT Groups</h3>
+                        <div class="chains-count" id="chains-count">Scanning repository...</div>
+                    </div>
+                    <div class="chains-list" id="chains-list">
+                        <div style="text-align: center; padding: 40px; color: #6b7280;">
+                            <div style="font-size: 2rem; margin-bottom: 10px;">⚡</div>
+                            <p>Scanning your repository for KQL queries...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chain-visualization">
+                    <div class="chain-viz-header">
+                        <h3 id="chain-title">Select an APT group to analyze</h3>
+                        <div class="chain-stats" id="chain-stats"></div>
+                    </div>
+                    <div class="chain-graph" id="chain-graph">
+                        <div style="text-align: center; padding-top: 200px; color: #6b7280;">
+                            <div style="font-size: 3rem; margin-bottom: 20px;">🎯</div>
+                            <p>APT detection coverage will appear here</p>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">Click "Scan Repository" to analyze your KQL queries against APT groups</p>
+                        </div>
+                    </div>
+                    
+                    <div id="query-details-panel" class="query-details-panel">
+                        <h4>Query Details</h4>
+                        <div id="query-details-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            GITHUB_REPO_OWNER: 'realnamesareboring',
+            GITHUB_REPO_NAME: 'ATT4CKQL',
+            MITRE_API_URL: 'https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json',
+            GITHUB_API_BASE: 'https://api.github.com/repos'
+        };
+        
+        // Embedded APT metadata (no external file needed)
+        const EMBEDDED_APT_METADATA = {
+            "G0007": {
+                "name": "APT28",
+                "aliases": ["Fancy Bear", "Sofacy", "Sednit"],
+                "country": "Russia",
+                "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+                "description": "Russian military intelligence (GRU) threat group"
+            },
+            "G0016": {
+                "name": "APT29",
+                "aliases": ["Cozy Bear", "The Dukes"],
+                "country": "Russia",
+                "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+                "description": "Russian intelligence service threat group"
+            },
+            "G0050": {
+                "name": "APT32",
+                "aliases": ["OceanLotus"],
+                "country": "Vietnam",
+                "coordinates": { "lat": 21.0285, "lng": 105.8542 },
+                "description": "Vietnamese state-sponsored threat group"
+            },
+            "G0096": {
+                "name": "APT41",
+                "aliases": ["Winnti", "Barium"],
+                "country": "China",
+                "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+                "description": "Chinese state-sponsored threat group"
+            },
+            "G0040": {
+                "name": "Lazarus Group",
+                "aliases": ["HIDDEN COBRA", "Guardians of Peace"],
+                "country": "North Korea",
+                "coordinates": { "lat": 39.0392, "lng": 125.7625 },
+                "description": "North Korean state-sponsored threat group"
+            },
+            "G0065": {
+                "name": "Leviathan",
+                "aliases": ["TEMP.Jumper", "APT40"],
+                "country": "China",
+                "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+                "description": "Chinese state-sponsored threat group"
+            },
+            "G0034": {
+                "name": "Sandworm Team",
+                "aliases": ["ELECTRUM", "Telebots"],
+                "country": "Russia",
+                "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+                "description": "Russian military threat group"
+            },
+            "G0087": {
+                "name": "APT39",
+                "aliases": ["Chafer"],
+                "country": "Iran",
+                "coordinates": { "lat": 35.6892, "lng": 51.3890 },
+                "description": "Iranian cyber espionage group"
+            },
+            "G0049": {
+                "name": "OilRig",
+                "aliases": ["APT34", "Helix Kitten"],
+                "country": "Iran",
+                "coordinates": { "lat": 35.6892, "lng": 51.3890 },
+                "description": "Iranian threat group focused on Middle East"
+            },
+            "G0010": {
+                "name": "Turla",
+                "aliases": ["Snake", "Uroburos"],
+                "country": "Russia",
+                "coordinates": { "lat": 55.7558, "lng": 37.6173 },
+                "description": "Russian FSB-attributed threat group"
+            }
+        };
+        
+        let leafletMap = null;
+        let currentMapLocation = null;
+        
+        let mitreData = null;
+        let repositoryQueries = [];
+        let discoveredChains = [];
+        let currentChain = null;
+        let aptMetadata = null;
+        
+        // Load APT metadata (now embedded, no fetch needed)
+        async function loadAPTMetadata() {
+            return EMBEDDED_APT_METADATA;
+        }
+        
+        async function showWorldMap() {
+            if (!aptMetadata) {
+                aptMetadata = await loadAPTMetadata();
+            }
+            
+            if (discoveredChains.length === 0) {
+                alert('Please scan the repository first to analyze APT coverage');
+                return;
+            }
+            
+            document.getElementById('world-map-modal').classList.add('show');
+            renderWorldMapList();
+        }
+        
+        function renderWorldMapList() {
+            // Create a map of APT IDs to their coverage data
+            const aptCoverageMap = {};
+            discoveredChains.forEach(chain => {
+                const aptId = chain.id.replace('apt-', '');
+                aptCoverageMap[aptId] = chain.coverage;
+            });
+            
+            // Build list of APT groups with map links
+            const aptList = Object.entries(aptMetadata)
+                .filter(([aptId]) => aptCoverageMap[aptId]) // Only show APTs with coverage data
+                .map(([aptId, metadata]) => {
+                    const coverage = aptCoverageMap[aptId];
+                    const chain = discoveredChains.find(c => c.id === `apt-${aptId}`);
+                    
+                    // Determine color based on coverage
+                    let badgeColor = '#dc2626'; // red - low coverage
+                    if (coverage.percentage > 50) badgeColor = '#10b981'; // green - high coverage
+                    else if (coverage.percentage > 25) badgeColor = '#f59e0b'; // orange - medium coverage
+                    
+                    return { aptId, metadata, coverage, chain, badgeColor };
+                })
+                .sort((a, b) => b.coverage.percentage - a.coverage.percentage); // Sort by coverage
+            
+            // Initialize map and add ALL markers
+            initializeMapWithAllMarkers(aptList);
+            
+            // Render list in sidebar
+            const sidebar = document.getElementById('apt-details-sidebar');
+            sidebar.innerHTML = `
+                <h3>APT Groups</h3>
+                <p style="color: #9ca3af; font-size: 12px; margin-bottom: 15px;">
+                    Click marker on map or list item to view details
+                </p>
+                ${aptList.map(apt => `
+                    <div class="apt-map-item" onclick="showAPTModal('${apt.aptId}')" 
+                         style="background: #374151; padding: 12px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; border-left: 4px solid ${apt.badgeColor}; transition: all 0.3s ease;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h4 style="color: white; margin: 0; font-size: 14px;">${apt.metadata.name}</h4>
+                            <span style="background: ${apt.badgeColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                ${apt.coverage.percentage}%
+                            </span>
+                        </div>
+                        <div style="color: #9ca3af; font-size: 11px; margin-bottom: 5px;">
+                            ${apt.metadata.aliases.slice(0, 2).join(', ')}
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 11px;">
+                            📍 ${apt.metadata.country} • ${apt.coverage.covered}/${apt.coverage.total} techniques
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        function initializeMapWithAllMarkers(aptList) {
+            const mapContainer = document.getElementById('google-map');
+            mapContainer.innerHTML = '<div id="leaflet-map" style="width: 100%; height: 100%; border-radius: 8px;"></div>';
+            
+            setTimeout(() => {
+                // Initialize map centered on world view
+                leafletMap = L.map('leaflet-map', {
+                    zoomControl: true,
+                    scrollWheelZoom: true
+                }).setView([30, 20], 2); // World view
+                
+                // Add dark-themed tile layer
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                }).addTo(leafletMap);
+                
+                // Add markers for ALL APT groups
+                aptList.forEach(apt => {
+                    const { lat, lng } = apt.metadata.coordinates;
+                    const markerColor = apt.badgeColor;
+                    
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 10,
+                        fillColor: markerColor,
+                        color: '#991b1b',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(leafletMap);
+                    
+                    // Make marker clickable
+                    marker.on('click', () => {
+                        showAPTModal(apt.aptId);
+                    });
+                    
+                    marker.bindTooltip(apt.metadata.name, { permanent: false, direction: 'top' });
+                });
+            }, 100);
+        }
+        
+        function showAPTModal(aptId) {
+            const chain = discoveredChains.find(c => c.id === `apt-${aptId}`);
+            if (!chain) return;
+            
+            // Close world map modal
+            document.getElementById('world-map-modal').classList.remove('show');
+            
+            // Open attack chains modal with this APT selected
+            document.getElementById('attack-chains-modal').classList.add('show');
+            selectChain(`apt-${aptId}`);
+        }
+        
+        function showAPTTechniquesModal(aptId) {
+            const chain = discoveredChains.find(c => c.id === `apt-${aptId}`);
+            if (!chain) return;
+            
+            const detectedTechniques = chain.techniques.filter(t => t.detected);
+            
+            const sidebar = document.getElementById('apt-details-sidebar');
+            const html = `
+                <h3>Detected Techniques</h3>
+                <p style="color: #9ca3af; font-size: 12px; margin-bottom: 15px;">
+                    ${chain.aptGroup.name} - ${detectedTechniques.length} techniques detected
+                </p>
+                ${detectedTechniques.map(t => `
+                    <div style="background: #374151; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #10b981;">
+                        <div style="color: #3b82f6; font-weight: 600; font-size: 12px;">${t.id}</div>
+                        <div style="color: #cbd5e1; font-size: 13px; margin: 5px 0;">${t.name}</div>
+                        <div style="color: #9ca3af; font-size: 11px; margin-top: 5px;">
+                            ✓ Query: ${t.query}
+                        </div>
+                        ${t.queryCount > 1 ? `<div style="color: #fbbf24; font-size: 10px; margin-top: 3px;">🔍 ${t.queryCount} detection queries</div>` : ''}
+                    </div>
+                `).join('')}
+            `;
+            
+            sidebar.innerHTML = html;
+        }
+        
+        function showAPTGapsModal(aptId) {
+            const chain = discoveredChains.find(c => c.id === `apt-${aptId}`);
+            if (!chain) return;
+            
+            const gapTechniques = chain.techniques.filter(t => !t.detected);
+            
+            const sidebar = document.getElementById('apt-details-sidebar');
+            const html = `
+                <h3>Detection Gaps</h3>
+                <p style="color: #9ca3af; font-size: 12px; margin-bottom: 15px;">
+                    ${chain.aptGroup.name} - ${gapTechniques.length} missing detections
+                </p>
+                ${gapTechniques.map(t => `
+                    <div style="background: #374151; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                        <div style="color: #3b82f6; font-weight: 600; font-size: 12px;">${t.id}</div>
+                        <div style="color: #cbd5e1; font-size: 13px; margin: 5px 0;">${t.name}</div>
+                        <div style="color: #fbbf24; font-size: 11px; margin-top: 5px;">
+                            ⚠️ Detection Query Recommended
+                        </div>
+                        ${t.tactics && t.tactics.length > 0 ? `<div style="color: #9ca3af; font-size: 10px; margin-top: 3px;">Tactics: ${t.tactics.join(', ')}</div>` : ''}
+                    </div>
+                `).join('')}
+            `;
+            
+            sidebar.innerHTML = html;
+        }
+        
+        function viewFullAnalysis(chainId) {
+            closeModal();
+            document.getElementById('attack-chains-modal').classList.add('show');
+            selectChain(chainId);
+        }
+        
+        async function scanRepository() {
+            try {
+                showLoading();
+                
+                // Load APT metadata if not already loaded
+                if (!aptMetadata) {
+                    aptMetadata = await loadAPTMetadata();
+                }
+                
+                await performRepositoryScan();
+                document.getElementById('attack-chains-modal').classList.add('show');
+                hideLoading();
+            } catch (error) {
+                console.error('Repository scan failed:', error);
+                alert(`Repository scan failed: ${error.message}`);
+                hideLoading();
+            }
+        }
+        
+        async function performRepositoryScan() {
+            try {
+                updateLoadingStep(1, 'Fetching MITRE ATT&CK framework and APT data');
+                mitreData = await fetchMitreData();
+                
+                updateLoadingStep(2, 'Scanning ATT4CKQL repository');
+                repositoryQueries = await fetchRepositoryQueries();
+                console.log(`Found ${repositoryQueries.length} queries from your repository`);
+                
+                updateLoadingStep(3, 'Parsing KQL queries and extracting techniques');
+                await parseQueryContent();
+                
+                updateLoadingStep(4, 'Mapping queries to MITRE techniques and APT groups');
+                await mapQueriesToMitre();
+                
+                updateLoadingStep(5, 'Building APT gap analysis with detection recommendations');
+                discoveredChains = await buildDynamicAttackChains();
+                console.log(`Built ${discoveredChains.length} APT gap analysis chains`);
+                
+                updateLoadingStep(6, 'Building visualization');
+                renderAttackChains();
+                console.log('APT gap analysis complete');
+                
+            } catch (error) {
+                console.error('Scan error:', error);
+                throw error;
+            }
+        }
+        
+        async function fetchMitreData() {
+            const response = await fetch(CONFIG.MITRE_API_URL);
+            if (!response.ok) throw new Error('Failed to fetch MITRE data');
+            const data = await response.json();
+            return parseMitreData(data.objects);
+        }
+        
+        function parseMitreData(objects) {
+            try {
+                console.log('Starting MITRE data parsing...');
+                
+                if (!objects || !Array.isArray(objects)) {
+                    throw new Error('MITRE objects is not a valid array');
+                }
+                
+                console.log(`Processing ${objects.length} MITRE objects...`);
+                
+                const techniques = {};
+                const tactics = {};
+                const techniqueKeywords = {};
+                const aptGroups = {};
+                const techniqueToGroups = {};
+                
+                objects.forEach((obj, index) => {
+                    try {
+                        if (!obj || typeof obj !== 'object') {
+                            return;
+                        }
+                        
+                        if (obj.type === 'x-mitre-tactic') {
+                            tactics[obj.x_mitre_shortname] = {
+                                id: obj.external_references?.[0]?.external_id || obj.id,
+                                name: obj.name,
+                                description: obj.description
+                            };
+                        } else if (obj.type === 'attack-pattern' && !obj.revoked) {
+                            const techniqueId = obj.external_references?.[0]?.external_id;
+                            if (techniqueId) {
+                                const technique = {
+                                    id: techniqueId,
+                                    name: obj.name,
+                                    description: obj.description,
+                                    tactics: obj.kill_chain_phases?.map(phase => phase.phase_name) || [],
+                                    platforms: obj.x_mitre_platforms || [],
+                                    dataSourceNames: obj.x_mitre_data_sources || []
+                                };
+                                
+                                techniques[techniqueId] = technique;
+                                
+                                const keywords = extractTechniqueKeywords(obj);
+                                if (keywords && keywords.length > 0) {
+                                    techniqueKeywords[techniqueId] = keywords;
+                                }
+                            }
+                        } else if (obj.type === 'intrusion-set' && !obj.revoked) {
+                            const groupId = obj.external_references?.[0]?.external_id || obj.id;
+                            const group = {
+                                id: groupId,
+                                name: obj.name,
+                                aliases: obj.aliases || [],
+                                description: obj.description,
+                                techniques: [],
+                                externalId: obj.external_references?.[0]?.external_id,
+                                url: obj.external_references?.[0]?.url
+                            };
+                            
+                            aptGroups[groupId] = group;
+                        } else if (obj.type === 'relationship' && obj.relationship_type === 'uses') {
+                            const sourceId = obj.source_ref;
+                            const targetId = obj.target_ref;
+                            
+                            if (sourceId && targetId && 
+                                sourceId.startsWith('intrusion-set--') && 
+                                targetId.startsWith('attack-pattern--')) {
+                                
+                                const techniqueObj = objects.find(o => o.id === targetId);
+                                const techniqueId = techniqueObj?.external_references?.[0]?.external_id;
+                                
+                                const groupObj = objects.find(o => o.id === sourceId);
+                                const groupId = groupObj?.external_references?.[0]?.external_id || sourceId;
+                                
+                                if (techniqueId && aptGroups[groupId]) {
+                                    if (!aptGroups[groupId].techniques) {
+                                        aptGroups[groupId].techniques = [];
+                                    }
+                                    
+                                    aptGroups[groupId].techniques.push(techniqueId);
+                                    
+                                    if (!techniqueToGroups[techniqueId]) {
+                                        techniqueToGroups[techniqueId] = [];
+                                    }
+                                    techniqueToGroups[techniqueId].push(groupId);
+                                }
+                            }
+                        }
+                    } catch (objError) {
+                        console.warn(`Error processing MITRE object at index ${index}:`, objError);
+                    }
+                });
+                
+                console.log(`✓ Parsed ${Object.keys(techniques).length} MITRE techniques, ${Object.keys(aptGroups).length} APT groups`);
+                
+                return { techniques, tactics, techniqueKeywords, aptGroups, techniqueToGroups };
+                
+            } catch (error) {
+                console.error('Error in parseMitreData:', error);
+                throw error;
+            }
+        }
+        
+        function extractTechniqueKeywords(mitreObj) {
+            try {
+                if (!mitreObj) return [];
+                
+                const keywords = [];
+                const text = `${mitreObj.name || ''} ${mitreObj.description || ''}`.toLowerCase();
+                
+                const cloudPatterns = [
+                    'cloud', 'aws', 'azure', 'gcp', 'ec2', 'instance', 'iam', 's3', 'bucket',
+                    'console', 'account', 'user', 'role', 'access key', 'credential', 'login',
+                    'cloudtrail', 'logging', 'trail', 'metadata', 'snapshot', 'password'
+                ];
+                
+                const actionPatterns = [
+                    'create', 'delete', 'modify', 'disable', 'stop', 'start', 'list', 'get',
+                    'put', 'attach', 'detach', 'authorize', 'revoke', 'assume', 'switch'
+                ];
+                
+                const securityPatterns = [
+                    'tamper', 'evasion', 'manipulation', 'escalation', 'persistence', 
+                    'discovery', 'collection', 'exfiltration', 'impact', 'unauthorized'
+                ];
+                
+                [...cloudPatterns, ...actionPatterns, ...securityPatterns].forEach(pattern => {
+                    if (text.includes(pattern)) {
+                        keywords.push(pattern);
+                    }
+                });
+                
+                return [...new Set(keywords)];
+            } catch (error) {
+                return [];
+            }
+        }
+        
+        async function fetchRepositoryQueries() {
+            const queries = [];
+            const platformDirs = ['Amazon Web Services', 'Azure', 'Active Directory', 'Entra ID'];
+            
+            for (const platform of platformDirs) {
+                try {
+                    document.getElementById('current-file').textContent = `Scanning ${platform}...`;
+                    const queriesPath = `${platform}/Queries`;
+                    const url = `${CONFIG.GITHUB_API_BASE}/${CONFIG.GITHUB_REPO_OWNER}/${CONFIG.GITHUB_REPO_NAME}/contents/${encodeURIComponent(queriesPath)}`;
+                    
+                    const response = await fetch(url);
+                    if (response.status === 404) continue;
+                    if (!response.ok) continue;
+                    
+                    const files = await response.json();
+                    if (!Array.isArray(files)) continue;
+                    
+                    const kqlFiles = files.filter(file => file?.name?.endsWith('.kql'));
+                    
+                    for (const file of kqlFiles) {
+                        try {
+                            document.getElementById('current-file').textContent = `Loading ${file.name}...`;
+                            const contentResponse = await fetch(file.download_url);
+                            if (contentResponse.ok) {
+                                const content = await contentResponse.text();
+                                queries.push({
+                                    name: file.name.replace('.kql', ''),
+                                    platform: platform.toLowerCase().replace(/\s+/g, '-'),
+                                    path: file.path,
+                                    content: content,
+                                    size: file.size
+                                });
+                            }
+                        } catch (fileError) {
+                            console.warn(`Failed to load file ${file.name}:`, fileError);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Failed to scan ${platform}:`, error);
+                }
+            }
+            
+            console.log(`Found ${queries.length} queries from ATT4CKQL repository`);
+            return queries;
+        }
+        
+        async function parseQueryContent() {
+            for (const query of repositoryQueries) {
+                query.eventNames = extractEventNames(query.content);
+                query.entities = extractEntitiesFromKQL(query.content);
+                query.intentKeywords = extractIntentKeywords(query.name, query.content);
+                query.severity = analyzeSeverity(query.content, query.name, query.intentKeywords);
+                query.dataSources = extractDataSources(query.content);
+            }
+        }
+        
+        function extractEventNames(content) {
+            const eventNames = [];
+            
+            const singleMatches = content.match(/EventName\s*==?\s*["']([^"']+)["']/gi);
+            if (singleMatches) {
+                singleMatches.forEach(match => {
+                    const eventName = match.match(/["']([^"']+)["']/)[1];
+                    eventNames.push(eventName);
+                });
+            }
+            
+            return [...new Set(eventNames)];
+        }
+        
+        function extractEntitiesFromKQL(content) {
+            const entities = [];
+            
+            const entityPatterns = [
+                /\b(UserIdentity\w+)/g,
+                /\b(SourceIpAddress|Source_IP|SourceIP)\b/g,
+                /\b(InstanceId|Instance_Id)\b/g
+            ];
+            
+            entityPatterns.forEach(pattern => {
+                const matches = content.match(pattern);
+                if (matches) {
+                    matches.forEach(match => entities.push(match));
+                }
+            });
+            
+            return [...new Set(entities)];
+        }
+        
+        function extractIntentKeywords(queryName, content) {
+            const keywords = [];
+            const text = `${queryName} ${content}`.toLowerCase();
+            
+            const intentPatterns = [
+                'tamper', 'detection', 'suspicious', 'malicious', 'unauthorized', 
+                'compromise', 'exploit', 'attack', 'escalation'
+            ];
+            
+            intentPatterns.forEach(pattern => {
+                if (text.includes(pattern)) {
+                    keywords.push(pattern);
+                }
+            });
+            
+            return [...new Set(keywords)];
+        }
+        
+        function analyzeSeverity(content, name, intentKeywords) {
+            const highSeverityIndicators = [
+                'tamper', 'delete', 'disable', 'malicious', 'compromise'
+            ];
+            
+            const text = `${name} ${content}`.toLowerCase();
+            
+            if (highSeverityIndicators.some(indicator => text.includes(indicator))) {
+                return 'high';
+            }
+            
+            return 'medium';
+        }
+        
+        function extractDataSources(content) {
+            const sources = [];
+            
+            const sourcePatterns = [
+                /\b(AWSCloudTrail|CloudTrail)\b/g,
+                /\b(SecurityEvents?)\b/g
+            ];
+            
+            sourcePatterns.forEach(pattern => {
+                const matches = content.match(pattern);
+                if (matches) {
+                    matches.forEach(match => sources.push(match));
+                }
+            });
+            
+            return [...new Set(sources)];
+        }
+        
+        async function mapQueriesToMitre() {
+            for (const query of repositoryQueries) {
+                const techniques = [];
+                
+                const candidateTechniques = findCandidateTechniques(query);
+                const scoredTechniques = scoreTechniqueCandidates(query, candidateTechniques);
+                const bestMatches = scoredTechniques
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 3)
+                    .filter(t => t.score > 0.3)
+                    .map(t => t.techniqueId);
+                
+                if (bestMatches.length === 0) {
+                    const fallbackTechnique = getFallbackTechnique(query);
+                    if (fallbackTechnique) {
+                        bestMatches.push(fallbackTechnique);
+                    }
+                }
+                
+                techniques.push(...bestMatches);
+                
+                query.techniques = techniques.map(tid => {
+                    const technique = {
+                        id: tid,
+                        name: mitreData.techniques[tid]?.name || `Unknown Technique (${tid})`,
+                        description: mitreData.techniques[tid]?.description || 'Unknown technique description'
+                    };
+                    
+                    const aptGroupIds = mitreData.techniqueToGroups[tid] || [];
+                    technique.aptGroups = aptGroupIds.map(groupId => {
+                        const group = mitreData.aptGroups[groupId];
+                        return {
+                            id: groupId,
+                            name: group?.name || 'Unknown Group',
+                            aliases: group?.aliases || []
+                        };
+                    });
+                    
+                    return technique;
+                });
+                
+                console.log(`"${query.name}" → ${techniques.join(', ')}`);
+            }
+        }
+        
+        function findCandidateTechniques(query) {
+            const candidates = [];
+            
+            Object.entries(mitreData.techniqueKeywords || {}).forEach(([techniqueId, techniqueKeywords]) => {
+                const technique = mitreData.techniques[techniqueId];
+                if (!technique) return;
+                
+                if (query.platform.includes('aws') || query.platform.includes('amazon')) {
+                    if (!technique.platforms.some(p => p.toLowerCase().includes('aws') || 
+                                                       p.toLowerCase().includes('cloud') ||
+                                                       p.toLowerCase().includes('iaas'))) {
+                        return;
+                    }
+                }
+                
+                candidates.push({
+                    techniqueId,
+                    technique,
+                    keywords: techniqueKeywords
+                });
+            });
+            
+            return candidates;
+        }
+        
+        function scoreTechniqueCandidates(query, candidates) {
+            const scoredCandidates = [];
+            
+            candidates.forEach(candidate => {
+                let score = 0;
+                
+                const keywordMatches = candidate.keywords.filter(keyword => 
+                    query.intentKeywords.includes(keyword)
+                ).length;
+                score += keywordMatches * 0.5;
+                
+                if (score > 0) {
+                    scoredCandidates.push({
+                        techniqueId: candidate.techniqueId,
+                        score: Math.min(score, 1.0)
+                    });
+                }
+            });
+            
+            return scoredCandidates;
+        }
+        
+        function getFallbackTechnique(query) {
+            if (query.intentKeywords.includes('tamper')) {
+                return 'T1562.008';
+            }
+            
+            if (query.platform.includes('aws')) {
+                return 'T1078.004';
+            }
+            
+            return 'T1078';
+        }
+        
+        async function buildDynamicAttackChains() {
+            const chains = [];
+            
+            const detectedTechniques = new Map();
+            repositoryQueries.forEach(query => {
+                query.techniques.forEach(tech => {
+                    if (!detectedTechniques.has(tech.id)) {
+                        detectedTechniques.set(tech.id, []);
+                    }
+                    detectedTechniques.get(tech.id).push(query);
+                });
+            });
+            
+            console.log(`Detection coverage: ${detectedTechniques.size} unique techniques detected`);
+            
+            Object.entries(mitreData.aptGroups).forEach(([aptId, aptGroup]) => {
+                if (!aptGroup.techniques || aptGroup.techniques.length < 5) return;
+                
+                const aptTechniques = aptGroup.techniques;
+                const coveredTechniques = aptTechniques.filter(tid => detectedTechniques.has(tid));
+                const missingTechniques = aptTechniques.filter(tid => !detectedTechniques.has(tid));
+                
+                const coveragePercentage = Math.round((coveredTechniques.length / aptTechniques.length) * 100);
+                
+                if (coveragePercentage === 0 && !aptGroup.name.includes('APT')) return;
+                
+                const techniqueNodes = [];
+                let nodeIndex = 0;
+                
+                coveredTechniques.slice(0, 8).forEach((techId) => {
+                    const technique = mitreData.techniques[techId];
+                    const queries = detectedTechniques.get(techId);
+                    
+                    techniqueNodes.push({
+                        id: techId,
+                        name: technique?.name || 'Unknown Technique',
+                        query: queries[0].name,
+                        fullQuery: queries[0],
+                        entities: queries[0].entities,
+                        severity: queries[0].severity,
+                        detected: true,
+                        queryCount: queries.length,
+                        position: generateNodePosition(nodeIndex++, 12)
+                    });
+                });
+                
+                missingTechniques.slice(0, 4).forEach((techId) => {
+                    const technique = mitreData.techniques[techId];
+                    
+                    techniqueNodes.push({
+                        id: techId,
+                        name: technique?.name || 'Unknown Technique',
+                        query: 'Detection Query Recommended',
+                        detected: false,
+                        description: technique?.description || 'No description available',
+                        tactics: technique?.tactics || [],
+                        position: generateNodePosition(nodeIndex++, 12)
+                    });
+                });
+                
+                const connections = [];
+                for (let i = 0; i < techniqueNodes.length - 1; i++) {
+                    const color = techniqueNodes[i].detected && techniqueNodes[i + 1].detected ? '#10b981' : 
+                                 !techniqueNodes[i].detected && !techniqueNodes[i + 1].detected ? '#6b7280' : 
+                                 '#f59e0b';
+                    
+                    connections.push({
+                        from: i,
+                        to: i + 1,
+                        type: techniqueNodes[i + 1].detected ? 'detected' : 'gap',
+                        label: techniqueNodes[i + 1].detected ? 'Detected' : 'Gap',
+                        color: color
+                    });
+                }
+                
+                const chain = {
+                    id: `apt-${aptId}`,
+                    name: `${aptGroup.name}`,
+                    type: 'apt',
+                    confidence: coveragePercentage,
+                    aptGroup: aptGroup,
+                    techniques: techniqueNodes,
+                    connections: connections,
+                    coverage: {
+                        total: aptTechniques.length,
+                        covered: coveredTechniques.length,
+                        missing: missingTechniques.length,
+                        percentage: coveragePercentage
+                    },
+                    queries: coveredTechniques.flatMap(tid => detectedTechniques.get(tid) || [])
+                };
+                
+                chains.push(chain);
+            });
+            
+            chains.sort((a, b) => b.coverage.percentage - a.coverage.percentage);
+            
+            console.log(`Built ${chains.length} APT coverage chains`);
+            
+            return chains;
+        }
+        
+        function generateNodePosition(index, total) {
+            const spacing = 250;
+            const startX = 50;
+            const baseY = 100;
+            
+            return {
+                x: startX + (index * spacing),
+                y: baseY + (index % 2 === 0 ? 0 : 40)
+            };
+        }
+        
+        function renderAttackChains() {
+            const chainsHtml = discoveredChains.map((chain, index) => {
+                let description = `${chain.coverage.covered}/${chain.coverage.total} techniques detected`;
+                let badgeClass = chain.coverage.percentage > 50 ? '' : chain.coverage.percentage > 25 ? 'confidence-medium' : 'confidence-low';
+                
+                return `
+                    <div class="chain-item ${index === 0 ? 'active' : ''} apt-chain" onclick="selectChain('${chain.id}', this)">
+                        <div class="name">🔴 ${chain.name}</div>
+                        <div class="details">
+                            <span>${description}</span>
+                            <span class="confidence-badge ${badgeClass}">${chain.coverage.percentage}% coverage</span>
+                        </div>
+                        ${chain.aptGroup.aliases && chain.aptGroup.aliases.length > 0 ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                            Aliases: ${chain.aptGroup.aliases.slice(0, 2).join(', ')}
+                        </div>` : ''}
+                        <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">
+                            ${chain.coverage.missing} gaps • ${chain.queries.length} detections
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('chains-list').innerHTML = chainsHtml;
+            
+            const totalQueries = repositoryQueries.length;
+            const totalAPTs = discoveredChains.length;
+            const avgCoverage = Math.round(discoveredChains.reduce((sum, c) => sum + c.coverage.percentage, 0) / totalAPTs);
+            
+            document.getElementById('chains-count').textContent = 
+                `${totalAPTs} APT groups analyzed • ${totalQueries} total detection queries • ${avgCoverage}% avg coverage`;
+            
+            if (discoveredChains.length > 0) {
+                selectChain(discoveredChains[0].id);
+            }
+        }
+        
+        function selectChain(chainId) {
+            document.querySelectorAll('.chain-item').forEach(item => item.classList.remove('active'));
+            
+            const chainItems = document.querySelectorAll('.chain-item');
+            chainItems.forEach(item => {
+                const onclick = item.getAttribute('onclick');
+                if (onclick && onclick.includes(chainId)) {
+                    item.classList.add('active');
+                }
+            });
+            
+            currentChain = discoveredChains.find(chain => chain.id === chainId);
+            
+            if (currentChain) {
+                document.getElementById('chain-title').textContent = `🔴 ${currentChain.name}`;
+                
+                document.getElementById('chain-stats').innerHTML = `
+                    <span>APT Group: <span class="platform-badge" style="background: #dc2626;">${currentChain.aptGroup.name}</span></span>
+                    <span>Coverage: ${currentChain.coverage.covered}/${currentChain.coverage.total} techniques (${currentChain.coverage.percentage}%)</span>
+                    <span>Detection Queries: ${currentChain.queries.length}</span>
+                    <span>Gaps: ${currentChain.coverage.missing} missing detections</span>
+                `;
+                
+                renderChainVisualization(currentChain);
+            }
+        }
+        
+        function renderChainVisualization(chain) {
+            let html = '';
+            
+            if (!chain || !chain.techniques) {
+                document.getElementById('chain-graph').innerHTML = '<div style="text-align: center; padding: 100px; color: #ef4444;">Error: Invalid chain data</div>';
+                return;
+            }
+            
+            chain.techniques.forEach((technique, index) => {
+                if (!technique) return;
+                
+                const position = technique.position || { x: 50 + (index * 250), y: 100 };
+                
+                if (technique.detected) {
+                    const entities = technique.entities || [];
+                    const severity = technique.severity || 'medium';
+                    const queryCount = technique.queryCount || 1;
+                    
+                    html += `
+                        <div class="apt-technique-node severity-${severity}" 
+                             style="left: ${position.x}px; top: ${position.y}px;"
+                             onclick="showQueryDetails('${technique.query}')">
+                            <div class="tech-id">${technique.id}</div>
+                            <div class="tech-name">${technique.name}</div>
+                            <div class="tech-query">✓ Detected: ${technique.query}</div>
+                            <div class="apt-indicator">🔍 ${queryCount} detection ${queryCount > 1 ? 'queries' : 'query'}</div>
+                            <div class="tech-entities">${entities.slice(0, 3).join(', ')}</div>
+                        </div>
+                    `;
+                } else {
+                    const tactics = technique.tactics || [];
+                    html += `
+                        <div class="gap-node" 
+                             style="left: ${position.x}px; top: ${position.y}px;"
+                             onclick="showGapDetails('${technique.id}', '${technique.name}', '${technique.description}', '${tactics.join(', ')}')">
+                            <div class="tech-id">${technique.id}</div>
+                            <div class="tech-name">${technique.name}</div>
+                            <div class="tech-query" style="color: #fbbf24;">⚠️ Detection Query Recommended</div>
+                            <div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">
+                                Tactics: ${tactics.slice(0, 2).join(', ')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (chain.connections) {
+                chain.connections.forEach(conn => {
+                    if (!conn || typeof conn.from !== 'number' || typeof conn.to !== 'number') return;
+                    
+                    const fromTech = chain.techniques[conn.from];
+                    const toTech = chain.techniques[conn.to];
+                    
+                    if (!fromTech || !toTech) return;
+                    
+                    const fromPosition = fromTech.position || { x: 50, y: 100 };
+                    const toPosition = toTech.position || { x: 300, y: 100 };
+                    
+                    const startX = fromPosition.x + 220;
+                    const startY = fromPosition.y + 50;
+                    const endX = toPosition.x;
+                    const width = Math.max(endX - startX, 10);
+                    
+                    const lineStyle = toTech.detected ? 'solid' : 'dashed';
+                    
+                    html += `
+                        <div class="connection-line" 
+                             style="left: ${startX}px; top: ${startY}px; width: ${width}px; background: ${conn.color}; 
+                                    border-style: ${lineStyle};"></div>
+                        <div class="connection-label" 
+                             style="left: ${startX + width/2 - 40}px; top: ${startY - 25}px;">
+                            ${conn.label}
+                        </div>
+                    `;
+                });
+            }
+            
+            html += `
+                <div class="correlation-legend">
+                    <div class="legend-title">APT ${chain.aptGroup?.name || 'Unknown'}</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #dc2626; height: 12px; width: 12px; border-radius: 2px;"></div>
+                        Detected Techniques (${chain.coverage?.covered || 0})
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b7280; height: 12px; width: 12px; border-radius: 2px; border: 2px dashed #9ca3af;"></div>
+                        Missing Detections (${chain.coverage?.missing || 0})
+                    </div>
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #374151; font-size: 10px; color: #9ca3af;">
+                        Coverage: ${chain.coverage?.percentage || 0}% (${chain.coverage?.covered || 0}/${chain.coverage?.total || 0} techniques)
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('chain-graph').innerHTML = html;
+        }
+        
+        function showQueryDetails(queryName) {
+            let query = repositoryQueries.find(q => q.name === queryName);
+            
+            if (!query) {
+                const currentTechnique = currentChain?.techniques.find(t => t.query === queryName);
+                if (currentTechnique && currentTechnique.fullQuery) {
+                    query = currentTechnique.fullQuery;
+                }
+            }
+            
+            if (query) {
+                const content = `
+                    <p><strong>File:</strong> ${query.path}</p>
+                    <p><strong>Platform:</strong> ${query.platform}</p>
+                    <p><strong>Severity:</strong> ${query.severity}</p>
+                    <p><strong>Techniques:</strong> ${query.techniques.map(t => `${t.id} - ${t.name}`).join(', ')}</p>
+                    
+                    <h5 style="color: #3b82f6; margin: 15px 0 10px 0;">KQL Query Preview:</h5>
+                    <div class="query-code-preview">${query.content.substring(0, 800)}</div>
+                `;
+                
+                document.getElementById('query-details-content').innerHTML = content;
+                document.getElementById('query-details-panel').classList.add('show');
+            }
+        }
+        
+        function showGapDetails(techId, techName, description, tactics) {
+            const content = `
+                <h4 style="color: #f59e0b; margin-bottom: 15px;">⚠️ Detection Gap Identified</h4>
+                <p><strong>Technique ID:</strong> ${techId}</p>
+                <p><strong>Technique Name:</strong> ${techName}</p>
+                <p><strong>Tactics:</strong> ${tactics || 'N/A'}</p>
+                
+                <div style="margin-top: 15px; padding: 12px; background: rgba(251, 191, 36, 0.1); border-left: 3px solid #f59e0b; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 11px; color: #fbbf24;">
+                        <strong>Recommendation:</strong> Create a detection query for this technique
+                    </p>
+                </div>
+                
+                <h5 style="color: #3b82f6; margin: 15px 0 10px 0;">Description:</h5>
+                <div style="font-size: 11px; color: #cbd5e1; line-height: 1.5; max-height: 150px; overflow-y: auto; padding: 10px; background: #0f172a; border-radius: 4px;">
+                    ${description.replace(/undefined/g, 'No description available')}
+                </div>
+            `;
+            
+            document.getElementById('query-details-content').innerHTML = content;
+            document.getElementById('query-details-panel').classList.add('show');
+        }
+        
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+        
+        function updateLoadingStep(stepNumber, message) {
+            for (let i = 1; i <= 6; i++) {
+                const step = document.getElementById(`step-${i}`);
+                if (i < stepNumber) {
+                    step.className = 'completed';
+                } else if (i === stepNumber) {
+                    step.className = 'active';
+                } else {
+                    step.className = '';
+                }
+            }
+            
+            const progress = (stepNumber / 6) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            
+            if (message) {
+                document.getElementById('current-file').textContent = message;
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('attack-chains-modal').classList.remove('show');
+            document.getElementById('world-map-modal').classList.remove('show');
+            document.getElementById('query-details-panel').classList.remove('show');
+        }
+        
+        function exportResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                repository: `${CONFIG.GITHUB_REPO_OWNER}/${CONFIG.GITHUB_REPO_NAME}`,
+                aptCoverage: discoveredChains.map(chain => ({
+                    aptGroup: chain.aptGroup.name,
+                    coverage: chain.coverage,
+                    detectedTechniques: chain.techniques.filter(t => t.detected).map(t => t.id),
+                    missingTechniques: chain.techniques.filter(t => !t.detected).map(t => t.id)
+                })),
+                statistics: {
+                    totalQueries: repositoryQueries.length,
+                    analyzedAPTs: discoveredChains.length,
+                    averageCoverage: Math.round(discoveredChains.reduce((sum, c) => sum + c.coverage.percentage, 0) / discoveredChains.length)
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `att4ckql-apt-coverage-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        window.onclick = function(event) {
+            const chains = document.getElementById('attack-chains-modal');
+            const worldMap = document.getElementById('world-map-modal');
+            if (event.target === chains || event.target === worldMap) {
+                closeModal();
+            }
+        }
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
